@@ -1,44 +1,63 @@
-import Database from "../Database/index.js";
-
-export default function CourseRoutes(app) {
-    app.get("/api/courses", (req, res) => {
-        const courses = Database.courses;
-        res.status(200).send(courses);
+import {
+    findAllCourses,
+    createCourse,
+    deleteCourse,
+    updateCourse,
+    findCourseById,
+  } from "./dao.js";
+  
+  export default function CourseRoutes(app) {
+    app.get("/api/courses", async (req, res) => {
+      try {
+        const courses = await findAllCourses();
+        res.json(courses);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
-
-    app.post("/api/courses", (req, res) => {
-        const course = {
-            ...req.body,
-            _id: new Date().getTime().toString()
-        };
-        Database.courses.push(course);
-        res.status(200).send(course);
-    })
-
-    app.delete("/api/courses/:id", (req, res) => {
-        const { id } = req.params;
-        Database.courses = Database.courses
-            .filter((c) => c._id !== id);
+  
+    app.post("/api/courses", async (req, res) => {
+      try {
+        const newCourse = await createCourse(req.body);
+        res.status(201).json(newCourse);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+  
+    app.delete("/api/courses/:id", async (req, res) => {
+      const { id } = req.params;
+      try {
+        await deleteCourse(id);
         res.sendStatus(204);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
-
-    app.put("/api/courses/:id", (req, res) => {
-        const { id } = req.params;
-        const course = req.body;
-        Database.courses = Database.courses
-            .map((c) => c._id === id ? { ...c, ...course } : c);
+  
+    app.put("/api/courses/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedCourse = req.body;
+      try {
+        await updateCourse(id, updatedCourse);
         res.sendStatus(204);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
-
-    app.get("/api/courses/:id", (req, res) => {
-        const { id } = req.params;
-        const course = Database.courses
-            .find((c) => c._id === id);
-
+  
+    app.get("/api/courses/:id", async (req, res) => {
+      const { id } = req.params;
+      console.log(id);
+      try {
+        const course = await findCourseById(id);
         if (!course) {
-            res.status(404).send("Course not found");
-            return;
+          res.status(404).send("Cannot find Course!");
+          return;
         }
-        res.send(course);
+        res.json(course);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     });
-}
+  }
